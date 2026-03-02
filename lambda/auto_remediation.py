@@ -37,10 +37,12 @@ def get_last_reboot_time(instance_id: str) -> Optional[datetime]:
     except ssm.exceptions.ParameterNotFound:
         return None
     except ValueError as e:
-        logger.warning("Invalid timestamp format in SSM for %s: %s", instance_id, str(e))
+        logger.warning(
+            "Invalid timestamp format in SSM for %s: %s", instance_id, str(e))
         return None
     except ClientError as e:
-        logger.warning("Could not read SSM parameter for %s: %s", instance_id, str(e))
+        logger.warning("Could not read SSM parameter for %s: %s",
+                       instance_id, str(e))
         return None
 
 
@@ -54,11 +56,12 @@ def set_last_reboot_time(instance_id: str) -> None:
             Overwrite=True
         )
     except ClientError as e:
-        logger.warning("Could not write SSM parameter for %s: %s", instance_id, str(e))
+        logger.warning("Could not write SSM parameter for %s: %s",
+                       instance_id, str(e))
 
 
 def is_in_cooldown(instance_id: str) -> bool:
-   
+
     last_reboot = get_last_reboot_time(instance_id)
     if last_reboot is None:
         return False
@@ -103,7 +106,8 @@ def reboot_instance(instance_id: str) -> bool:
         set_last_reboot_time(instance_id)
         return True
     except Exception as e:
-        logger.error("Failed to reboot %s: %s", instance_id, str(e), exc_info=True)
+        logger.error("Failed to reboot %s: %s",
+                     instance_id, str(e), exc_info=True)
         return False
 
 
@@ -114,7 +118,7 @@ def send_notification(instance_id: str, tags: dict, alarm_name: str,
         return
 
     status = "Rebooted" if success else "Reboot FAILED"
-  
+
     subject = f"[Auto-Heal] {instance_id} {status} – {alarm_name}"[:100]
     body = (
         f"Auto-healing action {'succeeded' if success else 'FAILED'}\n\n"
@@ -131,7 +135,8 @@ def send_notification(instance_id: str, tags: dict, alarm_name: str,
         sns.publish(TopicArn=SNS_TOPIC_ARN, Subject=subject, Message=body)
         logger.info("SNS notification sent")
     except ClientError as e:
-        logger.error("Failed to send SNS notification: %s", str(e), exc_info=True)
+        logger.error("Failed to send SNS notification: %s",
+                     str(e), exc_info=True)
 
 
 def process_record(record: dict) -> dict:
@@ -155,11 +160,13 @@ def process_record(record: dict) -> dict:
         name = raw_name if raw_name is not None else dim.get('Name')
         if name == 'InstanceId':
             raw_value = dim.get('value')
-            instance_id = raw_value if raw_value is not None else dim.get('Value')
+            instance_id = raw_value if raw_value is not None else dim.get(
+                'Value')
             break
 
     if not instance_id:
-        logger.error("No InstanceId found in alarm dimensions. Alarm: %s", alarm_name)
+        logger.error(
+            "No InstanceId found in alarm dimensions. Alarm: %s", alarm_name)
         return {'statusCode': 400, 'body': 'No InstanceId found in alarm'}
 
     logger.info("Processing alarm: %s | State: %s | Instance: %s",
@@ -181,11 +188,13 @@ def process_record(record: dict) -> dict:
     logger.info("Instance %s current state: %s", instance_id, state)
 
     if state != 'running':
-        logger.warning("Instance %s is %s — skipping reboot", instance_id, state)
+        logger.warning("Instance %s is %s — skipping reboot",
+                       instance_id, state)
         return {'statusCode': 200, 'body': f"Skipped - instance is {state}"}
 
     success = reboot_instance(instance_id)
-    send_notification(instance_id, tags, alarm_name, reason, state_change_time, success)
+    send_notification(instance_id, tags, alarm_name,
+                      reason, state_change_time, success)
 
     if not success:
         return {'statusCode': 500, 'body': 'Reboot failed'}
@@ -217,6 +226,6 @@ def lambda_handler(event, _):
             logger.exception("Error processing record: %s", str(e))
             results.append({'statusCode': 500, 'body': str(e)})
 
-  
-    overall_status = 200 if all(r['statusCode'] == 200 for r in results) else 500
+    overall_status = 200 if all(
+        r['statusCode'] == 200 for r in results) else 500
     return {'statusCode': overall_status, 'body': json.dumps(results)}
