@@ -1,29 +1,51 @@
 import json
+import logging
 import boto3
+from botocore.exceptions import ClientError
 
-ec2 = boto3.client("ec2")
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+ec2 = boto3.client('ec2')
 
 def lambda_handler(event, context):
-    print("Received event:", json.dumps(event))
+    logger.info("Received event: %s", json.dumps(event))
 
     try:
-        # Parse SNS message from CloudWatch Alarm
-        message = json.loads(event['Records'][0]['Sns']['Message'])
+        # Parse SNS message
+        sns_message = json.loads(event['Records'][0]['Sns']['Message'])
+        
+        # Extract InstanceId safely
+        dimensions = sns_message.get('Trigger', {}).get('Dimensions', [])
+        instance_id = next(
+            (d['value'] for d in dimensions if d.get('name') == 'InstanceId'),
+            None
+        )
 
-        # Get instance ID from alarm dimensions
-        instance_id = message['Trigger']['Dimensions'][0]['value']
+        if not instance_id:
+            raise ValueError("No InstanceId found in CloudWatch alarm dimensions")
 
-        print(f"Rebooting EC2 instance: {instance_id}")
+        logger.info(f"Rebooting EC2 instance: {instance_id}")
 
-        # Reboot the EC2 instance
-        ec2.reboot_instances(InstanceIds=[instance_id])
+        # Reboot the instance
+        response = ec2.reboot_instances(InstanceIds=[instance_id])
+        
+        logger.info("Reboot response: %s", response)
 
         return {
             "statusCode": 200,
-            "body": f"Instance {instance_id} reboot initiated"
+            "body": json.dumps({
+                "message": f"Reboot initiated for instance {instance_id}"
+            })
         }
 
-    except Exception as e:
-        print("Error:", str(e))
+    except ClientError as e:
+        logger.error("AWS ClientError: %s", str(e))
         raise
+    except Exception as e:
+        logger.error("Unexpected error: %s", str(e))
+        raise
+<<<<<<< HEAD
     
+=======
+>>>>>>> 44f62077cf6aa65c9fcd003c044068e544918e43
