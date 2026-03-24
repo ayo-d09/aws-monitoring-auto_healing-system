@@ -205,9 +205,3 @@ Ayomide Obadina
 - GitHub: [@ayo-d09](https://github.com/ayo-d09)
 - Linkedin: https://www.linkedin.com/in/ayomide-obadina-b2b7893b9
 - Email: ddraven009@gmail.com
-
-## Acknowledgments
-
-- AWS Documentation
-- Terraform AWS Provider
-- CloudWatch Agent Configuration Guide
