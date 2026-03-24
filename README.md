@@ -1,11 +1,15 @@
 # AWS Monitoring & Auto-Healing System
 
-A production-ready AWS monitoring solution with automated incident response using CloudWatch, Lambda, and Terraform.
+A simple but smart setup that watches your EC2 instance 24/7 and automatically fixes problems before you even notice using CloudWatch, Lambda, and Terraform.
 
-## Overview
+## What It Does 
 
-This project demonstrates a complete cloud monitoring and auto-healing infrastructure that automatically detects and resolves EC2 instance issues without manual intervention.
-
+- Monitors CPU, Memory, Disk, and Network in real-time
+- Sends warning emails when things get high (80%+)
+- Automatically reboots the instance if it goes critical (90%+)
+- Gives you a clean CloudWatch dashboard to check everything
+- Fully managed with Terraform (deploy in minutes)
+  
 ## Features
 
 - Real-time monitoring of CPU, Memory, Disk, and Network metrics
@@ -17,7 +21,7 @@ This project demonstrates a complete cloud monitoring and auto-healing infrastru
 
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed system design.
+See (ARCHITECTURE.md) for detailed system design.
 
 ## Prerequisites
 
@@ -48,13 +52,30 @@ terraform plan
 terraform apply
 ```
 
-### 4. Confirm SNS Subscription
+### 4. Confirm SNS Subscription (Email)
 
 Check your email and confirm the SNS subscription to receive alerts.
 
 ### 5. Access Dashboard
 
 After deployment, Terraform outputs the CloudWatch Dashboard URL.
+
+## How to Test Auto-Healing 
+
+SSH into the instance and stress the CPU:
+
+# Generate high CPU load for 15 minutes
+timeout 900 dd if=/dev/zero of=/dev/null &
+timeout 900 dd if=/dev/zero of=/dev/null &
+Now wait 10–15 minutes and watch what happens:
+
+You’ll receive warning emails
+Then critical alerts
+The instance will reboot by itself
+Lambda will handle the recovery
+
+You can watch the Lambda logs live with:
+aws logs tail /aws/lambda/auto_heal_ec2 --follow
 
 ## Project Structure
 ```
@@ -172,7 +193,7 @@ sudo systemctl restart amazon-cloudwatch-agent
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a pull request.
+Please open an issue or submit a pull request.
 
 ## License
 
@@ -180,9 +201,9 @@ MIT License - See LICENSE file for details
 
 ## Author
 
-Your Name
+Ayomide Obadina 
 - GitHub: [@ayo-d09](https://github.com/ayo-d09)
-
+- Linkedin: https://www.linkedin.com/in/ayomide-obadina-b2b7893b9?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app
 - Email: ddraven009@gmail.com
 
 ## Acknowledgments
